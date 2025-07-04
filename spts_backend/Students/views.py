@@ -68,13 +68,14 @@ def student_crud(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+
 @csrf_exempt
 def student_list(request):
     if request.method == "GET":
         class_name = request.GET.get("class", "").strip()
         section = request.GET.get("section", "").strip()
-        page = int(request.GET.get("page", 2))
-        per_page = 2  # <-- show 2 students per page
+        page = int(request.GET.get("page", 1))
+        per_page = 2  # 2 students per page
 
         students = Student.objects.all()
 
@@ -88,14 +89,16 @@ def student_list(request):
 
         student_data = list(page_obj.object_list.values('id', 'name', 'class_name', 'section'))
 
-        return JsonResponse({
-            "total": paginator.count,             #Total filtered records
-            "pages": paginator.num_pages,         #Total number of pages
-            "current": page_obj.number,           #Current page number
-            "students": student_data              #Current page's student data
-        })
+        response_data = {
+            "total": paginator.count,
+            "pages": paginator.num_pages,
+            "current": page_obj.number,
+            "students": student_data
+        }
+
+        return JsonResponse(response_data)
 
     elif request.method == "POST":
         data = json.loads(request.body)
         student = Student.objects.create(**data)
-        return JsonResponse({"message": "Student created", "id": student.id})   
+        return JsonResponse({"message": "Student created", "id": student.id})

@@ -16,7 +16,7 @@ class Score(models.Model):
     marks = models.IntegerField()
 
     def __str__(self):
-        return f"{self.student.name} - {self.assessment.title} - {self.marks_obtained} marks"
+        return f"{self.student.name} - {self.assessment.title} - {self.marks} marks"
 
 
 
