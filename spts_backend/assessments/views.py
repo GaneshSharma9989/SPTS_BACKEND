@@ -1,31 +1,65 @@
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from .models import Assessment
-from .models import Student, Assessment, Score
+from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import get_object_or_404
 import json
-from users.views import TOKENS
-
-def authenticate_request(request):
-    token = request.headers.get("Authorization")
-    return token in TOKENS
-
+from .models import Student, Assessment, Score
 @csrf_exempt
-def assessment_data(request):
+def assessments_list_create(request):
     if request.method == "GET":
         assessments = Assessment.objects.all().values('id', 'title', 'chapter', 'week', 'total_marks')
         return JsonResponse(list(assessments), safe=False)
-    return JsonResponse({"message": "Only GET method allowed"}, status=405)
+
+    elif request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            assessment = Assessment.objects.create(
+                title=data.get("title"),
+                chapter=data.get("chapter"),
+                week=data.get("week"),
+                total_marks=data.get("total_marks")
+            )
+            return JsonResponse({"message": "Assessment created", "id": assessment.id}, status=201)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+
+@csrf_exempt
+def assessment_detail(request, id):
+    try:
+        assessment = Assessment.objects.get(id=id)
+    except Assessment.DoesNotExist:
+        return JsonResponse({"error": "Assessment not found"}, status=404)
+
+    if request.method == "PUT":
+        try:
+            data = json.loads(request.body)
+            assessment.title = data.get("title")
+            assessment.chapter = data.get("chapter")
+            assessment.week = data.get("week")
+            assessment.total_marks = data.get("total_marks")
+            assessment.save()
+            return JsonResponse({"message": "Assessment updated"}, status=200)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    elif request.method == "DELETE":
+        assessment.delete()
+        return JsonResponse({"message": "Assessment deleted"}, status=200)
+
+    return JsonResponse({"message": "Method not allowed"}, status=405)
+
 
 @csrf_exempt
 def score_list(request):
     if request.method == "POST":
         try:
             data = json.loads(request.body)
-            print("Received data:", data)
 
             student_id = data.get("student_id")
             assessment_id = data.get("assessment_id")
             marks = data.get("marks")
+
             student_obj = Student.objects.get(id=student_id)
             assessment_obj = Assessment.objects.get(id=assessment_id)
 
@@ -38,13 +72,12 @@ def score_list(request):
             return JsonResponse({"message": "Score added successfully."}, status=201)
 
         except Exception as e:
-            print("Error:", e)
             return JsonResponse({"error": str(e)}, status=500)
 
     elif request.method == "GET":
         scores = list(Score.objects.values())
         return JsonResponse(scores, safe=False)
-    
+
 
 @csrf_exempt
 def progress_by_student(request, student_id):
@@ -59,9 +92,8 @@ def progress_by_student(request, student_id):
         if not scores:
             return JsonResponse({"error": "No scores found for this student"}, status=404)
 
-        progress = list(scores)
-        return JsonResponse(progress, safe=False)
-    
+        return JsonResponse(list(scores), safe=False)
+
 
 @csrf_exempt
 def report_by_student(request, student_id):
@@ -84,7 +116,7 @@ def report_by_student(request, student_id):
             total_possible += total
 
             report_data.append({
-                "id": score.assessment.id,  
+                "id": score.assessment.id,
                 "assessment": score.assessment.title,
                 "chapter": score.assessment.chapter,
                 "week": score.assessment.week,
@@ -102,3 +134,5 @@ def report_by_student(request, student_id):
             "total_marks_possible": total_possible,
             "overall_percentage": overall_percentage
         }, safe=False)
+
+

@@ -6,15 +6,8 @@ from django.contrib.auth.hashers import make_password
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
 import json
-
-
-
 User = get_user_model()
-
-
 TOKENS = {}
-
-
 @csrf_exempt
 def get_users(request):
     if request.method == "GET":
@@ -80,23 +73,9 @@ def login_teacher(request):
             return JsonResponse({'error': 'Invalid credentials'}, status=400)
 
         except Exception as e:
-            print("🔥 Internal Server Error:", str(e))  # This will show exact error
+            print("Internal Server Error:", str(e))  
             return JsonResponse({'error': 'Internal Server Error: ' + str(e)}, status=500)
 
     return JsonResponse({'error': 'Only POST method allowed'}, status=405)
 
 
-@csrf_exempt
-def reset_password(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        username = data['username']
-        new_password = data['new_password']
-
-        try:
-            user = User.objects.get(username=username)
-            user.set_password(new_password)
-            user.save()
-            return JsonResponse({'message': 'Password reset successful'})
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
