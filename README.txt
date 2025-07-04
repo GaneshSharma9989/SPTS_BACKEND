@@ -245,7 +245,7 @@ TECH STACK
 - Auth: JWT (Custom Token)
 - API Testing: Postman
 - Pagination: Paginator
-- Deployment Ready: Yes (Render, Railway, Heroku etc.)
+
 
 =======================================================================
 SETUP INSTRUCTIONS
